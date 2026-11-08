@@ -57,10 +57,19 @@ def checkIn(email, passwd):
 
 
 if __name__ == '__main__':
-    split = os.environ.get('INFO').split(',')
-    for user in split:
-        user_split = user.split('<split>')
-        email = user_split[0]
-        password = user_split[1]
-        checkIn(email, password)
-        time.sleep(2)
+    try:
+        if not url:
+            raise ValueError('未配置 URL secret（机场站点地址）')
+        raw = os.environ.get('INFO')
+        if not raw:
+            raise ValueError('未配置 INFO secret（格式：邮箱<split>密码,邮箱2<split>密码2）')
+        for user in raw.split(','):
+            parts = user.split('<split>')
+            if len(parts) < 2 or not parts[0].strip():
+                raise ValueError('INFO 格式错误：' + user[:30])
+            checkIn(parts[0].strip(), parts[1].strip())
+            time.sleep(2)
+    except Exception as e:
+        print('签到任务异常:', e)
+        send_dingtalk('签到任务异常：{}'.format(e))
+        raise
