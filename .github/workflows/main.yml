@@ -37,5 +37,7 @@ jobs:
         env:
           URL: ${{ secrets.URL }}
           INFO: ${{ secrets.INFO }}
+          DINGTALK_WEBHOOK: ${{ secrets.DINGTALK_WEBHOOK }}
+          DINGTALK_SECRET: ${{ secrets.DINGTALK_SECRET }}
         run: |
           python3 ./main.py
