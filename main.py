@@ -1,5 +1,5 @@
 import requests, json, re, os, time
-import hmac, hashlib, base64, urllib.parse
+import urllib.parse
 
 session = requests.session()
 
@@ -18,15 +18,11 @@ UA = ('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
 IKUUU_COOKIE = os.environ.get('IKUUU_COOKIE', '').strip()
 INFO = os.environ.get('INFO', '').strip()
 
-# 钉钉机器人：从 GitHub Actions Secrets 读取（加签模式）
-DING_WEBHOOK = os.environ.get('DINGTALK_WEBHOOK', '').strip()
-DING_SECRET = os.environ.get('DINGTALK_SECRET', '').strip()
-
 url = ''
 
 
-def send_dingtalk(content):
-    # 邮件通知：未配置 MAIL_AUTH 时自动跳过，不影响钉钉与本任务
+def send_notify(content):
+    """把签到结果通过邮件发送（未配置 MAIL_AUTH 时自动跳过）。"""
     try:
         import sys, os as _os
         sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
@@ -34,24 +30,6 @@ def send_dingtalk(content):
         mailer.send_mail('ikuuu 签到通知', content)
     except Exception as _e:
         print('[邮件] 模块异常:', _e)
-    if not DING_WEBHOOK:
-        print('[钉钉] 未配置 DINGTALK_WEBHOOK，跳过通知')
-        return
-    webhook = DING_WEBHOOK
-    if DING_SECRET:
-        ts = str(round(time.time() * 1000))
-        string_to_sign = '{}\n{}'.format(ts, DING_SECRET)
-        sign = urllib.parse.quote_plus(base64.b64encode(
-            hmac.new(DING_SECRET.encode(), string_to_sign.encode(), hashlib.sha256).digest()
-        ))
-        sep = '&' if '?' in webhook else '?'
-        webhook = '{}{}timestamp={}&sign={}'.format(webhook, sep, ts, sign)
-    payload = {'msgtype': 'text', 'text': {'content': 'ikuuu 签到通知\n' + content}}
-    try:
-        r = requests.post(webhook, json=payload, timeout=10)
-        print('[钉钉] 推送结果:', r.status_code, r.text[:200])
-    except Exception as e:
-        print('[钉钉] 推送失败:', e)
 
 
 def base_headers(base):
@@ -103,7 +81,7 @@ def checkin_with_cookie(masked):
     r = session.post(url + '/user/checkin', headers=base_headers(url), timeout=20)
     msg = parse_result(r)
     print('[签到]', msg)
-    send_dingtalk('{}: {}'.format(masked, msg))
+    send_notify('{}: {}'.format(masked, msg))
     return msg
 
 
@@ -118,10 +96,10 @@ def checkin_with_password(email, passwd):
         r = session.post(url + '/user/checkin', headers=base_headers(url), timeout=20)
         msg = parse_result(r)
         print('[签到]', msg)
-        send_dingtalk('{}: {}'.format(masked, msg))
+        send_notify('{}: {}'.format(masked, msg))
     except Exception as e:
         print('签到失败:', e)
-        send_dingtalk('{}: 签到失败：{}'.format(masked, e))
+        send_notify('{}: 签到失败：{}'.format(masked, e))
 
 
 if __name__ == '__main__':
@@ -152,5 +130,5 @@ if __name__ == '__main__':
             raise ValueError('既未配置 IKUUU_COOKIE，也未配置 INFO，无法签到')
     except Exception as e:
         print('签到任务异常:', e)
-        send_dingtalk('签到任务异常：{}'.format(e))
+        send_notify('签到任务异常：{}'.format(e))
         raise
