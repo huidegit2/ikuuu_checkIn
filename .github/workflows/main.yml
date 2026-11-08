@@ -38,8 +38,6 @@ jobs:
           URL: ${{ secrets.URL }}
           INFO: ${{ secrets.INFO }}
           IKUUU_COOKIE: ${{ secrets.IKUUU_COOKIE }}
-          DINGTALK_WEBHOOK: ${{ secrets.DINGTALK_WEBHOOK }}
-          DINGTALK_SECRET: ${{ secrets.DINGTALK_SECRET }}
           MAIL_AUTH: ${{ secrets.MAIL_AUTH }}
           MAIL_TO: ${{ secrets.MAIL_TO }}
         run: |
